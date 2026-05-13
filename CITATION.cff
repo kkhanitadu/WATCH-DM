@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+title: "WATCH-DM: Data Analysis of Diabetes Mellitus Patients"
+message: "If you use this software, please cite it using the metadata in this file."
+type: software
+authors:
+  - given-names: Khanita
+    family-names: Duangchaemkarn
+    email: kkhanita.du@up.ac.th
+    affiliation: "University of Phayao"
+    orcid: "https://orcid.org/0000-0001-6864-9066"
+repository-code: "https://github.com/REPLACE_WITH_USERNAME/WATCH-DM"
+url: "https://github.com/REPLACE_WITH_USERNAME/WATCH-DM"
+abstract: >-
+  Reproducible analysis pipeline for the WATCH-DM study — a retrospective
+  cohort study of diabetes mellitus patients. Contains two modules:
+  (1) statistical analysis (descriptive statistics, survival analysis,
+  predictive modeling) and (2) visualization (publication figures).
+keywords:
+  - diabetes mellitus
+  - clinical data analysis
+  - survival analysis
+  - retrospective cohort
+  - reproducible research
+license: MIT
+version: 0.1.0
+date-released: "2026-05-13"

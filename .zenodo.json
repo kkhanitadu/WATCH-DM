@@ -1,0 +1,24 @@
+{
+  "title": "WATCH-DM: Data Analysis of Diabetes Mellitus Patients",
+  "description": "Reproducible analysis pipeline for the WATCH-DM retrospective cohort study of diabetes mellitus patients. Contains a statistical analysis module (descriptive statistics, survival analysis, predictive modeling) and a visualization module (publication-quality figures).",
+  "upload_type": "software",
+  "access_right": "open",
+  "license": "MIT",
+  "creators": [
+    {
+      "name": "Duangchaemkarn, Khanita",
+      "affiliation": "University of Phayao",
+      "orcid": "0000-0001-6864-9066"
+    }
+  ],
+  "keywords": [
+    "diabetes mellitus",
+    "clinical data analysis",
+    "survival analysis",
+    "retrospective cohort",
+    "reproducible research",
+    "python"
+  ],
+  "communities": [],
+  "related_identifiers": []
+}
