@@ -8,8 +8,8 @@ authors:
     email: kkhanita.du@up.ac.th
     affiliation: "University of Phayao"
     orcid: "https://orcid.org/0000-0001-6864-9066"
-repository-code: "https://github.com/REPLACE_WITH_USERNAME/WATCH-DM"
-url: "https://github.com/REPLACE_WITH_USERNAME/WATCH-DM"
+repository-code: "https://github.com/kkhanitadu/WATCH-DM"
+url: "https://github.com/kkhanitadu/WATCH-DM"
 abstract: >-
   Reproducible analysis pipeline for the WATCH-DM study — a retrospective
   cohort study of diabetes mellitus patients. Contains two modules:
