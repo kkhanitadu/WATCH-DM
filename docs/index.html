@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WATCH-DM Risk Score — Nakornping Hospital | TJPP 2026</title>
+<meta name="description" content="WATCH-DM Risk Score assessment for 5-year heart failure risk in type 2 diabetes outpatients at Nakornping Hospital. Reproducible Python pipeline and interactive calculator.">
+<meta name="author" content="Khanita Duangchaemkarn">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="WATCH-DM Risk Score — Nakornping Hospital">
+<meta property="og:description" content="5-year heart failure risk assessment in T2DM outpatients. n=2,382; interactive calculator + reproducible Python pipeline.">
+<meta property="og:image" content="assets/figure1.png">
+<meta property="og:url" content="https://kkhanitadu.github.io/WATCH-DM/">
+
+<!-- Favicon (heart inline SVG) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M32 56c-13-9-24-17-24-30 0-8 6-14 14-14 5 0 8 2 10 5 2-3 5-5 10-5 8 0 14 6 14 14 0 13-11 21-24 30z' fill='%231e3a5f'/%3E%3C/svg%3E">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --navy:#1e3a5f;--navy2:#2d5282;--navy-dark:#0f2540;
+  --green:#16a34a;--lgreen:#86efac;--green-fill:#dcfce7;
+  --yellow:#fbbf24;--orange:#f97316;--red:#ef4444;
+  --cream:#fffbea;--amber:#d97706;
+  --bg:#f1f5f9;--card:#fff;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;
+  --radius:10px;--shadow:0 2px 8px rgba(0,0,0,.08);
+}
+body{font-family:'Sarabun','Inter',sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.6}
+.en{font-family:'Inter',sans-serif}
+
+/* Language toggle */
+.lang-en{display:none}
+body.en .lang-th{display:none}
+body.en .lang-en{display:inline}
+body.en .lang-en-block{display:block}
+
+/* ── HEADER ── */
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:18px 28px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.header-icon{font-size:32px;flex-shrink:0}
+.header-content{flex:1;min-width:280px}
+.header h1{font-size:18px;font-weight:700;line-height:1.3}
+.header p{font-size:12.5px;opacity:.8;margin-top:3px;line-height:1.5}
+.header-actions{display:flex;gap:10px;align-items:center;margin-left:auto}
+.lang-btn{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:6px 12px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
+.lang-btn:hover{background:rgba(255,255,255,.25)}
+.lang-btn .lang-state{font-weight:800;margin-left:4px}
+
+/* ── TAB BAR ── */
+.tab-bar{background:#fff;border-bottom:2px solid var(--border);display:flex;gap:0;padding:0 12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 6px rgba(0,0,0,.06);overflow-x:auto}
+.tab-btn{padding:13px 16px;border:none;background:none;color:var(--muted);font-family:inherit;font-size:13.5px;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.tab-btn:hover{color:var(--navy);background:#f8fafc}
+.tab-btn.active{color:var(--navy);border-bottom-color:var(--navy);font-weight:700}
+.tab-pane{display:none;padding:22px 24px 40px;max-width:1280px;margin:0 auto}
+.tab-pane.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px 22px;margin-bottom:18px}
+.card-title{font-size:14.5px;font-weight:700;color:var(--navy);margin-bottom:14px;padding-bottom:10px;border-bottom:2px solid #e8f0fe;display:flex;align-items:center;gap:8px}
+
+/* ── GRID ── */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:900px){.grid2,.grid3,.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+
+/* ── KPI CARDS ── */
+.kpi{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px 18px;border-left:4px solid var(--navy)}
+.kpi-num{font-size:30px;font-weight:800;color:var(--navy);line-height:1}
+.kpi-label{font-size:12px;color:var(--muted);margin-top:4px;font-weight:600}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* ── INFO BOX ── */
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+@media(max-width:700px){.info-grid{grid-template-columns:1fr}}
+.info-box{background:#eff6ff;border-radius:8px;padding:14px 16px;border-left:3px solid #3b82f6}
+.info-box h4{font-size:13px;font-weight:700;color:#1d4ed8;margin-bottom:5px}
+.info-box p{font-size:12.5px;color:#374151;line-height:1.6}
+.info-box.green{background:#f0fdf4;border-left-color:#22c55e}
+.info-box.green h4{color:#15803d}
+.info-box.orange{background:#fff7ed;border-left-color:#f97316}
+.info-box.orange h4{color:#c2410c}
+
+/* ── TABLE ── */
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{background:var(--navy);color:#fff;padding:9px 12px;text-align:left;font-weight:600;font-size:12px}
+.tbl td{padding:9px 12px;border-bottom:1px solid #f1f5f9;vertical-align:top}
+.tbl tr:hover td{background:#f8fafc}
+.tbl tr:nth-child(even) td{background:#f8fafc}
+.tbl tr:nth-child(even):hover td{background:#eef2ff}
+
+/* ── RISK BADGES ── */
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+.badge-vl{background:#dcfce7;color:#15803d}.badge-l{background:#bbf7d0;color:#166534}
+.badge-avg{background:#fef9c3;color:#854d0e}.badge-h{background:#ffedd5;color:#9a3412}
+.badge-vh{background:#fee2e2;color:#991b1b}
+
+/* ── CHART ── */
+.chart-wrap{position:relative;height:260px}
+.chart-wrap-sm{position:relative;height:220px}
+
+/* ── ALERT BANNERS ── */
+.alert{padding:12px 16px;border-radius:8px;margin-bottom:14px;font-size:13px;display:flex;align-items:center;gap:10px}
+.alert-red{background:#fee2e2;border-left:4px solid #ef4444;color:#7f1d1d}
+.alert-orange{background:#fff7ed;border-left:4px solid #f97316;color:#7c2d12}
+.alert-blue{background:#eff6ff;border-left:4px solid #3b82f6;color:#1e3a5f}
+
+/* ── CALCULATOR ── */
+.calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.calc-grid{grid-template-columns:1fr}}
+.form-group label{display:block;font-size:12.5px;font-weight:600;color:var(--navy);margin-bottom:5px}
+.form-group label span{font-weight:400;color:var(--muted);font-size:11.5px}
+.form-group input,.form-group select{width:100%;padding:9px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:inherit;font-size:14px;color:var(--text);background:#fff;transition:border .2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:var(--navy2)}
+.score-display{text-align:center;padding:26px;border-radius:12px;margin-top:4px}
+.score-big{font-size:64px;font-weight:900;line-height:1}
+.score-max{font-size:18px;font-weight:400;opacity:.6}
+.score-risk{font-size:22px;font-weight:800;margin-top:8px}
+.score-sub{font-size:13px;margin-top:6px;opacity:.8;line-height:1.5}
+.calc-btn{width:100%;padding:13px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px;transition:background .2s}
+.calc-btn:hover{background:var(--navy2)}
+.rec-box{border-radius:8px;padding:14px 16px;margin-top:14px;font-size:13.5px;line-height:1.7}
+
+/* ── SCORING TABLE ── */
+.score-tbl{font-size:12.5px}
+.score-tbl th{font-size:12px;padding:7px 10px}
+.score-tbl td{padding:7px 10px;border-bottom:1px solid #f1f5f9}
+.pts-badge{display:inline-block;background:#1e3a5f;color:#fff;border-radius:4px;padding:1px 7px;font-weight:700;font-size:12px;min-width:26px;text-align:center}
+
+/* ── FIGURE 1 image ── */
+.figure-frame{background:#fff;border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center}
+.figure-frame img{max-width:100%;height:auto;display:block;margin:0 auto;border-radius:6px}
+.figure-caption{font-size:12.5px;color:var(--muted);margin-top:12px;line-height:1.6;font-style:italic}
+
+/* ── CODE / CITATION BLOCKS ── */
+.code-block{background:#0f172a;color:#e2e8f0;border-radius:8px;padding:14px 16px;font-family:'Courier New',Consolas,monospace;font-size:12.5px;line-height:1.6;overflow-x:auto;white-space:pre;margin-top:8px}
+.copy-btn{background:var(--navy);color:#fff;border:none;border-radius:6px;padding:5px 12px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;float:right;margin-top:-2px}
+.copy-btn:hover{background:var(--navy2)}
+.copy-btn.copied{background:var(--green)}
+
+/* ── EXTERNAL LINK CARDS ── */
+.link-card{display:block;background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 18px;text-decoration:none;color:inherit;transition:all .2s}
+.link-card:hover{border-color:var(--navy);box-shadow:0 4px 12px rgba(30,58,95,.15);transform:translateY(-2px)}
+.link-card h4{font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.link-card p{font-size:12.5px;color:var(--muted);line-height:1.5}
+.link-card .arrow{float:right;color:var(--muted);font-size:18px}
+
+/* ── TEAM CARDS ── */
+.person{background:#f8fafc;border-radius:8px;padding:14px 16px;border-left:3px solid var(--navy)}
+.person-name{font-size:13.5px;font-weight:700;color:var(--navy);margin-bottom:3px}
+.person-role{font-size:11.5px;color:var(--muted);margin-bottom:4px}
+.person-affil{font-size:11.5px;color:#475569;line-height:1.5}
+
+/* ── FOOTER ── */
+footer{text-align:center;padding:24px 18px 18px;font-size:11.5px;color:#94a3b8;border-top:1px solid var(--border);margin-top:10px;background:#fff;line-height:1.7}
+footer a{color:var(--navy2);text-decoration:none}
+footer a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-icon" aria-hidden="true">🫀</div>
+  <div class="header-content">
+    <h1>
+      <span class="lang-th">WATCH-DM Risk Score Dashboard — โรงพยาบาลนครพิงค์</span>
+      <span class="lang-en">WATCH-DM Risk Score Dashboard — Nakornping Hospital</span>
+    </h1>
+    <p>
+      <span class="lang-th">การประเมินความเสี่ยงต่อภาวะหัวใจล้มเหลว 5 ปี ในผู้ป่วยเบาหวานชนิดที่ 2 | คณะเภสัชศาสตร์ มหาวิทยาลัยพะเยา × กลุ่มงานเภสัชกรรม โรงพยาบาลนครพิงค์</span>
+      <span class="lang-en">5-year heart failure risk assessment in type 2 diabetes outpatients | School of Pharmaceutical Sciences, University of Phayao × Department of Pharmacy, Nakornping Hospital</span>
+    </p>
+  </div>
+  <div class="header-actions">
+    <button class="lang-btn" onclick="toggleLang()" aria-label="Toggle language">
+      <span class="lang-state" id="langState">TH</span> / EN
+    </button>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar" role="tablist">
+  <button class="tab-btn active" onclick="showTab('t1', event)">
+    <span class="lang-th">📖 ที่มาและระเบียบวิธี</span>
+    <span class="lang-en">📖 Background &amp; Methods</span>
+  </button>
+  <button class="tab-btn" onclick="showTab('t2', event)">
+    <span class="lang-th">🔽 Patient Flow</span>
+    <span class="lang-en">🔽 Patient Flow</span>
+  </button>
+  <button class="tab-btn" onclick="showTab('t3', event)">
+    <span class="lang-th">📊 ผลการวิจัย</span>
+    <span class="lang-en">📊 Results</span>
+  </button>
+  <button class="tab-btn" onclick="showTab('t4', event)">
+    <span class="lang-th">💡 สรุปและข้อเสนอแนะ</span>
+    <span class="lang-en">💡 Conclusions</span>
+  </button>
+  <button class="tab-btn" onclick="showTab('t5', event)">
+    <span class="lang-th">🧮 คำนวณคะแนน</span>
+    <span class="lang-en">🧮 Calculator</span>
+  </button>
+  <button class="tab-btn" onclick="showTab('t6', event)">
+    <span class="lang-th">💾 Code &amp; Citation</span>
+    <span class="lang-en">💾 Code &amp; Citation</span>
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 1 — Background & Methods
+═══════════════════════════════════════════════════════════════ -->
+<div id="t1" class="tab-pane active" role="tabpanel">
+
+  <div class="info-grid">
+    <div class="info-box">
+      <h4>
+        <span class="lang-th">🌏 สถานการณ์โรคเบาหวานโลก</span>
+        <span class="lang-en">🌏 Global diabetes burden</span>
+      </h4>
+      <p>
+        <span class="lang-th">ผู้ใหญ่อายุ 20–79 ปีทั่วโลกร้อยละ <strong>11.1</strong> (1 ใน 9) เป็นเบาหวาน และมากกว่า 4 ใน 10 ราย ยังไม่ทราบว่าตนเองเป็นโรคนี้ (IDF 2025)</span>
+        <span class="lang-en"><strong>11.1%</strong> of adults aged 20–79 (1 in 9) have diabetes worldwide, and over 4 in 10 are undiagnosed (IDF 2025).</span>
+      </p>
+    </div>
+    <div class="info-box green">
+      <h4>
+        <span class="lang-th">🇹🇭 สถานการณ์ในประเทศไทย</span>
+        <span class="lang-en">🇹🇭 Thailand context</span>
+      </h4>
+      <p>
+        <span class="lang-th">ผู้ป่วยรายใหม่ <strong>~300,000 คน/ปี</strong> รวมสะสมกว่า <strong>5.1 ล้านคน</strong> (ปีงบประมาณ 2567)</span>
+        <span class="lang-en"><strong>~300,000 new cases/year</strong>, cumulative total over <strong>5.1 million</strong> (Thai NCD report FY2024).</span>
+      </p>
+    </div>
+    <div class="info-box orange">
+      <h4>
+        <span class="lang-th">⚠️ ความเสี่ยง HF ในผู้ป่วยเบาหวาน</span>
+        <span class="lang-en">⚠️ HF risk in T2DM</span>
+      </h4>
+      <p>
+        <span class="lang-th">เสี่ยง HF สูงกว่าประชากรทั่วไป <strong>2 เท่า</strong> (เพศชาย) และ <strong>5 เท่า</strong> (เพศหญิง) อัตราตาย <strong>3 เท่า</strong> เมื่อเกิด HF ร่วม</span>
+        <span class="lang-en">HF risk is <strong>2×</strong> in men and <strong>5×</strong> in women vs. general population; <strong>3×</strong> mortality when HF co-exists with T2DM.</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">🎯 วัตถุประสงค์การวิจัย</span>
+        <span class="lang-en">🎯 Study objective</span>
+      </div>
+      <p style="font-size:14px;line-height:1.9;color:#374151">
+        <span class="lang-th">การศึกษานี้มีวัตถุประสงค์เพื่อ <strong>ประเมินและจำแนกระดับความเสี่ยงต่อการเกิดภาวะหัวใจล้มเหลว (HF) ใน 5 ปี</strong> ของผู้ป่วยเบาหวานชนิดที่ 2 ที่รับการรักษาในคลินิกเบาหวานผู้ป่วยนอก โรงพยาบาลนครพิงค์ โดยใช้คะแนนความเสี่ยง WATCH-DM</span>
+        <span class="lang-en">This study aims to <strong>assess and stratify 5-year heart failure (HF) risk</strong> in type 2 diabetic patients receiving care at the outpatient diabetic clinic of Nakornping Hospital using the WATCH-DM risk score.</span>
+      </p>
+      <ul style="margin-top:10px;padding-left:20px;font-size:13.5px;line-height:2;color:#374151">
+        <li><span class="lang-th">จำแนกผู้ป่วยออกเป็น 5 ระดับความเสี่ยง</span><span class="lang-en">Stratify patients into 5 risk levels</span></li>
+        <li><span class="lang-th">ระบุกลุ่มเป้าหมายสำหรับการบริบาลเภสัชกรรมเชิงรุก</span><span class="lang-en">Identify targets for proactive pharmaceutical care</span></li>
+        <li><span class="lang-th">วิเคราะห์ลักษณะทางคลินิกของแต่ละกลุ่ม</span><span class="lang-en">Analyze clinical characteristics per risk group</span></li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">🔬 WATCH-DM Risk Score คืออะไร?</span>
+        <span class="lang-en">🔬 What is WATCH-DM?</span>
+      </div>
+      <p style="font-size:13.5px;line-height:1.8;color:#374151;margin-bottom:10px">
+        <span class="lang-th">พัฒนาโดย <strong>Segar MW et al.</strong> (Diabetes Care, 2019) เป็น machine-learning–derived integer-point score สำหรับทำนายอุบัติการณ์การเกิด HF ใน 5 ปีในผู้ป่วย T2DM ใช้ตัวแปรทางคลินิก 10 ตัวแปร คะแนนรวมสูงสุด 32 ความแม่นยำ <strong>AUC = 0.747</strong></span>
+        <span class="lang-en">Developed by <strong>Segar et al.</strong> (Diabetes Care, 2019), WATCH-DM is a machine-learning–derived integer-point score predicting 5-year incident HF in T2DM patients, using 10 clinical variables for a maximum total of 32 points (<strong>AUC = 0.747</strong>).</span>
+      </p>
+      <div style="background:#eff6ff;border-radius:8px;padding:12px 14px;font-size:12.5px;color:#1e40af">
+        <strong>10 variables:</strong>
+        <span class="lang-th">(1) อายุ (2) BMI (3) SBP (4) DBP (5) FPG (6) HDL-C (7) SCr (8) QRS width (9) prior MI (10) prior CABG</span>
+        <span class="lang-en">(1) Age (2) BMI (3) SBP (4) DBP (5) FPG (6) HDL-C (7) SCr (8) QRS width (9) prior MI (10) prior CABG</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">⚙️ ระเบียบวิธีวิจัย</span>
+      <span class="lang-en">⚙️ Methodology</span>
+    </div>
+    <div class="grid3" style="gap:14px">
+      <div style="background:#f8fafc;border-radius:8px;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">📋
+          <span class="lang-th">รูปแบบการวิจัย</span><span class="lang-en">Study design</span>
+        </div>
+        <p style="font-size:13px;line-height:1.8;color:#374151">
+          <span class="lang-th">การวิจัย<strong>เชิงวิเคราะห์</strong>แบบย้อนหลัง (Retrospective Analytical Study) ระยะเวลา <strong>6 ปี</strong> (ม.ค. 2562 – ธ.ค. 2567)</span>
+          <span class="lang-en"><strong>Retrospective analytical study</strong> over a <strong>6-year</strong> period (Jan 2019 – Dec 2024).</span>
+        </p>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">🏥
+          <span class="lang-th">สถานที่ศึกษา</span><span class="lang-en">Setting</span>
+        </div>
+        <p style="font-size:13px;line-height:1.8;color:#374151">
+          <span class="lang-th"><strong>โรงพยาบาลนครพิงค์</strong> จ.เชียงใหม่ — โรงพยาบาลตติยภูมิภาคเหนือ คลินิกเบาหวานผู้ป่วยนอก</span>
+          <span class="lang-en"><strong>Nakornping Hospital</strong>, Chiang Mai — a tertiary care hospital in northern Thailand, outpatient diabetic clinic.</span>
+        </p>
+      </div>
+      <div style="background:#f8fafc;border-radius:8px;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:8px">🗄️
+          <span class="lang-th">แหล่งข้อมูล</span><span class="lang-en">Data sources</span>
+        </div>
+        <p style="font-size:13px;line-height:1.8;color:#374151">
+          <span class="lang-th">ระบบเวชระเบียนอิเล็กทรอนิกส์ (EHR): ผลตรวจห้องปฏิบัติการ · สัญญาณชีพและน้ำหนัก · รหัส ICD-10 · รายงาน Echocardiogram</span>
+          <span class="lang-en">Hospital EHR: laboratory results · vital signs &amp; body weight · ICD-10 codes · echocardiogram reports.</span>
+        </p>
+      </div>
+    </div>
+    <div class="grid3" style="gap:14px;margin-top:14px">
+      <div style="background:#f0fdf4;border-radius:8px;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:8px">📐
+          <span class="lang-th">การวิเคราะห์ทางสถิติ</span><span class="lang-en">Statistical analysis</span>
+        </div>
+        <p style="font-size:13px;line-height:1.8;color:#374151">
+          <span class="lang-th">Kruskal–Wallis test (ตัวแปรต่อเนื่อง), Chi-squared test (ตัวแปรเชิงหมวดหมู่), Mann–Whitney U + Bonferroni สำหรับ pairwise comparisons; α = 0.05</span>
+          <span class="lang-en">Kruskal–Wallis (continuous), Chi-squared (categorical), and pairwise Mann–Whitney U with Bonferroni correction; α = 0.05.</span>
+        </p>
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:#15803d;margin-bottom:8px">🔧
+          <span class="lang-th">การใช้ตัวแปรทดแทน</span><span class="lang-en">Interchangeable parameters</span>
+        </div>
+        <p style="font-size:13px;line-height:1.8;color:#374151">
+          <span class="lang-th">① <strong>eGFR</strong> ทดแทน SCr (CKD-EPI 2021) · ② <strong>QRS</strong> จาก echo report keyword (LBBB / RBBB / PPM = 3 pts) แทน ECG numeric</span>
+          <span class="lang-en">① <strong>eGFR</strong> as surrogate for SCr (CKD-EPI 2021) · ② <strong>QRS</strong> from echo report keywords (LBBB / RBBB / PPM = 3 pts) substituting ECG numeric.</span>
+        </p>
+      </div>
+      <div style="background:#fff7ed;border-radius:8px;padding:14px">
+        <div style="font-size:12px;font-weight:700;color:#c2410c;margin-bottom:8px">📜
+          <span class="lang-th">จริยธรรมการวิจัย</span><span class="lang-en">Ethics approval</span>
+        </div>
+        <p style="font-size:13px;line-height:1.8;color:#374151">
+          <span class="lang-th">คณะกรรมการการวิจัยในมนุษย์ โรงพยาบาลนครพิงค์ <strong>NKP No.057/68</strong> (22 พ.ค. 2568)</span>
+          <span class="lang-en">Nakornping Hospital IRB <strong>NKP No.057/68</strong> (22 May 2025).</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">🧪 รายละเอียดการคัดเลือกข้อมูล</span>
+      <span class="lang-en">🧪 Data filtering details</span>
+    </div>
+    <div class="grid2">
+      <div>
+        <h4 style="font-size:13px;color:var(--navy);margin-bottom:8px">
+          <span class="lang-th">Biological plausibility ranges</span>
+          <span class="lang-en">Biological plausibility ranges</span>
+        </h4>
+        <table class="tbl">
+          <tr><th><span class="lang-th">ตัวแปร</span><span class="lang-en">Variable</span></th><th><span class="lang-th">เกณฑ์ที่ยอมรับ</span><span class="lang-en">Accepted range</span></th></tr>
+          <tr><td>SBP</td><td>60–300 mmHg</td></tr>
+          <tr><td>DBP</td><td>30–200 mmHg</td></tr>
+          <tr><td><span class="lang-th">น้ำหนัก</span><span class="lang-en">Weight</span></td><td>20–250 kg</td></tr>
+          <tr><td><span class="lang-th">ส่วนสูง</span><span class="lang-en">Height</span></td><td>100–220 cm</td></tr>
+          <tr><td>BMI</td><td>10–70 kg/m²</td></tr>
+        </table>
+      </div>
+      <div>
+        <h4 style="font-size:13px;color:var(--navy);margin-bottom:8px">
+          <span class="lang-th">รหัส ICD-10 ที่ใช้</span>
+          <span class="lang-en">ICD-10 codes used</span>
+        </h4>
+        <table class="tbl">
+          <tr><th><span class="lang-th">ประวัติ</span><span class="lang-en">History</span></th><th><span class="lang-th">รหัส</span><span class="lang-en">Codes</span></th></tr>
+          <tr><td>Prior MI</td><td>I21.x, I22.x, I25.2</td></tr>
+          <tr><td>Prior CABG</td><td>Z95.1 (diagnosis or operation field)</td></tr>
+          <tr><td>HF (sensitivity)</td><td>I50.x</td></tr>
+        </table>
+        <p style="font-size:11.5px;color:var(--muted);margin-top:8px;font-style:italic">
+          <span class="lang-th">หมายเหตุ: HF status ใช้สำหรับ sensitivity analysis (prevalent vs. incident HF)</span>
+          <span class="lang-en">Note: HF status used for sensitivity analysis (prevalent vs. incident HF).</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 2 — Patient Flow
+═══════════════════════════════════════════════════════════════ -->
+<div id="t2" class="tab-pane" role="tabpanel">
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">🔽 กระบวนการคัดเลือกกลุ่มตัวอย่าง (PRISMA-adapted)</span>
+      <span class="lang-en">🔽 Patient selection flow (PRISMA-adapted)</span>
+    </div>
+    <div class="figure-frame">
+      <img src="assets/figure1.png" alt="Patient selection flow diagram showing 13,958 patients filtered through vital signs, eGFR, and HDL-C/FPG availability to a final analytical cohort of 2,382 patients (17.1%)">
+      <p class="figure-caption">
+        <span class="lang-th"><strong>ภาพที่ 1.</strong> กระบวนการคัดเลือกผู้ป่วยจากฐานข้อมูล EHR (n = 13,958) สู่กลุ่มตัวอย่างวิเคราะห์ขั้นสุดท้าย (n = 2,382 หรือร้อยละ 17.1 ของกลุ่มเริ่มต้น)</span>
+        <span class="lang-en"><strong>Figure 1.</strong> Patient selection cascade from the EHR database (n = 13,958) to the final analytical cohort (n = 2,382; 17.1% of the initial cohort).</span>
+      </p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">📉 สาเหตุข้อมูลสูญหาย</span>
+        <span class="lang-en">📉 Reasons for exclusion</span>
+      </div>
+      <table class="tbl">
+        <tr><th><span class="lang-th">ขั้นตอน</span><span class="lang-en">Step</span></th><th>n</th><th><span class="lang-th">สาเหตุ</span><span class="lang-en">Reason</span></th></tr>
+        <tr><td>(i)</td><td>1,207</td><td>
+          <span class="lang-th">ขาดสัญญาณชีพ/มวลร่างกาย หรือค่าที่ไม่สมเหตุสมผลทางชีววิทยา</span>
+          <span class="lang-en">Missing vitals/body weight or values outside biological plausibility ranges</span>
+        </td></tr>
+        <tr><td>(ii)</td><td>1,768</td><td>
+          <span class="lang-th">ขาดข้อมูล eGFR</span>
+          <span class="lang-en">Missing eGFR</span>
+        </td></tr>
+        <tr><td>(iii)</td><td>8,601</td><td>
+          <span class="lang-th">ขาดข้อมูล HDL-C หรือ FPG (HDL-C ไม่ได้ตรวจเป็นประจำในคลินิกเบาหวาน)</span>
+          <span class="lang-en">Missing HDL-C or FPG (HDL-C not routinely ordered in the clinic)</span>
+        </td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">📌 ข้อควรระวังในการตีความ</span>
+        <span class="lang-en">📌 Interpretation caveats</span>
+      </div>
+      <ul style="padding-left:18px;font-size:13.5px;line-height:2;color:#374151">
+        <li>
+          <span class="lang-th">อาจมี <strong>Selection bias</strong> เนื่องจากผู้ที่ตรวจ HDL-C มีแนวโน้มมีความเสี่ยงโรคหัวใจสูงกว่าค่าเฉลี่ย</span>
+          <span class="lang-en"><strong>Selection bias</strong> is possible since HDL-C ordering may favor higher-risk patients.</span>
+        </li>
+        <li>
+          <span class="lang-th">การศึกษาเป็น <strong>cross-sectional</strong> ไม่สามารถยืนยัน <em>incidence</em> ของ HF ในอนาคต</span>
+          <span class="lang-en">This is a <strong>cross-sectional</strong> design — future HF <em>incidence</em> cannot be confirmed.</span>
+        </li>
+        <li>
+          <span class="lang-th">การศึกษาเป็น <strong>single-center</strong> ควรระวังการ generalize ไปบริบทอื่น</span>
+          <span class="lang-en"><strong>Single-center</strong> design — caution in generalizing to other settings.</span>
+        </li>
+        <li>
+          <span class="lang-th">แนะนำเพิ่ม HDL-C ใน <strong>standard lab panel</strong> ของคลินิกเบาหวาน</span>
+          <span class="lang-en">Adding HDL-C to the <strong>standard lab panel</strong> of diabetes clinics is recommended.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 3 — Results
+═══════════════════════════════════════════════════════════════ -->
+<div id="t3" class="tab-pane" role="tabpanel">
+
+  <div class="alert alert-red">🚨
+    <span class="lang-th"><strong>Very High risk:</strong> 58 ราย (2.4%) — คะแนน ≥14 — ต้องดูแลเชิงรุกอย่างเร่งด่วน</span>
+    <span class="lang-en"><strong>Very High risk:</strong> 58 patients (2.4%) — score ≥14 — require urgent proactive care</span>
+  </div>
+  <div class="alert alert-orange">⚠️
+    <span class="lang-th"><strong>High risk:</strong> 330 ราย (13.9%) — คะแนน 11–13 — ติดตามทุก 3–6 เดือน</span>
+    <span class="lang-en"><strong>High risk:</strong> 330 patients (13.9%) — score 11–13 — follow-up every 3–6 months</span>
+  </div>
+
+  <div class="grid4">
+    <div class="kpi" style="border-left-color:#22c55e">
+      <div class="kpi-num">2,382</div>
+      <div class="kpi-label"><span class="lang-th">ผู้ป่วยในการวิเคราะห์</span><span class="lang-en">Patients analyzed</span></div>
+      <div class="kpi-sub"><span class="lang-th">Complete cases (17.1%)</span><span class="lang-en">Complete cases (17.1%)</span></div>
+    </div>
+    <div class="kpi" style="border-left-color:#3b82f6">
+      <div class="kpi-num">64.3 <span style="font-size:18px">y</span></div>
+      <div class="kpi-label"><span class="lang-th">อายุเฉลี่ย</span><span class="lang-en">Mean age</span></div>
+      <div class="kpi-sub">SD ± 11.7</div>
+    </div>
+    <div class="kpi" style="border-left-color:#f97316">
+      <div class="kpi-num">7.6</div>
+      <div class="kpi-label"><span class="lang-th">คะแนน WATCH-DM เฉลี่ย</span><span class="lang-en">Mean WATCH-DM score</span></div>
+      <div class="kpi-sub">SD ± 2.9 | <span class="lang-th">พิสัย</span><span class="lang-en">range</span> 0–18</div>
+    </div>
+    <div class="kpi" style="border-left-color:#ef4444">
+      <div class="kpi-num">388</div>
+      <div class="kpi-label"><span class="lang-th">กลุ่มเสี่ยงสูง + สูงมาก</span><span class="lang-en">High + Very High risk</span></div>
+      <div class="kpi-sub">16.3%</div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-top:18px">
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">🍩 การกระจายของกลุ่มความเสี่ยง</span>
+        <span class="lang-en">🍩 Risk group distribution</span>
+      </div>
+      <div class="chart-wrap"><canvas id="cDonut"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">📊 การกระจายคะแนน WATCH-DM</span>
+        <span class="lang-en">📊 WATCH-DM score histogram</span>
+      </div>
+      <div class="chart-wrap"><canvas id="cHist"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">📈 อายุและ eGFR ตามกลุ่มความเสี่ยง</span>
+        <span class="lang-en">📈 Age and eGFR by risk group</span>
+        <span style="font-size:11px;background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;margin-left:4px">p&lt;0.001</span>
+      </div>
+      <div class="chart-wrap"><canvas id="cAgeEgfr"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">📈 FPG และ SBP</span>
+        <span class="lang-en">📈 FPG and SBP</span>
+        <span style="font-size:11px;background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;margin-left:4px">p&lt;0.001</span>
+      </div>
+      <div class="chart-wrap"><canvas id="cFpgSbp"></canvas></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">📊 สัดส่วนการมีส่วนร่วมของตัวแปร</span>
+        <span class="lang-en">📊 Component contributions</span>
+      </div>
+      <div class="chart-wrap"><canvas id="cComp"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">❤️‍🩹 ความชุกประวัติ MI</span>
+        <span class="lang-en">❤️‍🩹 Prior MI prevalence</span>
+        <span style="font-size:11px;background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;margin-left:4px">p&lt;0.001</span>
+      </div>
+      <div class="chart-wrap"><canvas id="cMI"></canvas></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">📋 ตารางที่ 1. ลักษณะทางคลินิกตามกลุ่มความเสี่ยง WATCH-DM (n = 2,382)</span>
+      <span class="lang-en">📋 Table 1. Clinical characteristics by WATCH-DM risk group (n = 2,382)</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <tr>
+        <th><span class="lang-th">ตัวแปร</span><span class="lang-en">Variable</span></th>
+        <th><span class="badge badge-vl">VL</span><br>n=1,214</th>
+        <th><span class="badge badge-l">L</span><br>n=574</th>
+        <th><span class="badge badge-avg">Avg</span><br>n=206</th>
+        <th><span class="badge badge-h">H</span><br>n=330</th>
+        <th><span class="badge badge-vh">VH</span><br>n=58</th>
+        <th><span class="lang-th">รวม</span><span class="lang-en">Total</span><br>n=2,382</th>
+        <th style="color:#dc2626">p</th>
+      </tr>
+      <tr><td>WATCH-DM score</td><td>≤7</td><td>8–9</td><td>10</td><td>11–13</td><td>≥14</td><td>0–18</td><td>—</td></tr>
+      <tr><td><span class="lang-th">คะแนน mean±SD</span><span class="lang-en">Score (mean±SD)</span></td><td>5.2±1.4</td><td>8.5±0.5</td><td>10.0±0.0</td><td>11.7±0.8</td><td>14.8±1.0</td><td>7.6±2.9</td><td style="color:#dc2626;font-weight:700">&lt;0.001</td></tr>
+      <tr><td><span class="lang-th">อายุ (ปี)</span><span class="lang-en">Age (years)</span></td><td>59.1±12.2</td><td>67.2±7.7</td><td>69.7±7.3</td><td>73.2±7.8</td><td>77.4±6.7</td><td>64.3±11.7</td><td style="color:#dc2626;font-weight:700">&lt;0.001</td></tr>
+      <tr><td>BMI (kg/m²)</td><td>26.3±5.1</td><td>26.7±5.2</td><td>27.4±5.8</td><td>27.1±5.5</td><td>27.2±5.1</td><td>26.6±5.3</td><td>0.008</td></tr>
+      <tr><td>SBP (mmHg)</td><td>131.9±17.1</td><td>137.8±45.2</td><td>137.1±18.5</td><td>142.2±22.0</td><td>148.1±21.5</td><td>135.6±27.7</td><td style="color:#dc2626;font-weight:700">&lt;0.001</td></tr>
+      <tr><td>DBP (mmHg)</td><td>78.6±22.7</td><td>75.6±13.0</td><td>72.7±14.1</td><td>73.5±14.7</td><td>70.2±13.2</td><td>76.5±19.0</td><td style="color:#dc2626;font-weight:700">&lt;0.001</td></tr>
+      <tr><td>FPG (mg/dL)</td><td>136.0±48.5</td><td>136.1±49.0</td><td>136.6±44.8</td><td>148.2±63.7</td><td>140.5±44.8</td><td>137.9±50.8</td><td>0.008</td></tr>
+      <tr><td>HDL-C (mg/dL)</td><td>51.4±13.7</td><td>50.9±13.1</td><td>47.4±12.1</td><td>48.0±13.0</td><td>44.4±10.8</td><td>50.3±13.3</td><td style="color:#dc2626;font-weight:700">&lt;0.001</td></tr>
+      <tr><td>eGFR (mL/min/1.73 m²)</td><td>84.9±22.3</td><td>69.2±25.9</td><td>59.2±25.8</td><td>49.0±21.5</td><td>32.8±17.4</td><td>72.6±27.4</td><td style="color:#dc2626;font-weight:700">&lt;0.001</td></tr>
+      <tr><td>Prior MI n (%)</td><td>5 (0.4%)</td><td>18 (3.1%)</td><td>13 (6.3%)</td><td>20 (6.1%)</td><td>6 (10.3%)</td><td>62 (2.6%)</td><td style="color:#dc2626;font-weight:700">&lt;0.001</td></tr>
+      <tr><td>Wide QRS n (%)</td><td>0 (0.0%)</td><td>0 (0.0%)</td><td>1 (0.5%)</td><td>1 (0.3%)</td><td>0 (0.0%)</td><td>2 (0.1%)</td><td>—</td></tr>
+      <tr><td>Prior CABG n (%)</td><td>0 (0.0%)</td><td>0 (0.0%)</td><td>0 (0.0%)</td><td>0 (0.0%)</td><td>0 (0.0%)</td><td>0 (0.0%)</td><td>—</td></tr>
+    </table>
+    </div>
+    <p style="font-size:11.5px;color:#6b7280;margin-top:10px;font-style:italic">
+      <span class="lang-th">หมายเหตุ: Kruskal–Wallis test (ตัวแปรต่อเนื่อง); Chi-squared test (ตัวแปรเชิงหมวดหมู่). "—" = ไม่ได้ทดสอบทางสถิติเนื่องจาก sparse data (n ≤ 2 รวมทั้งกลุ่ม) จึงรายงานแบบพรรณนา</span>
+      <span class="lang-en">Continuous variables: Kruskal–Wallis; categorical: Chi-squared. "—" = not tested due to sparse data (n ≤ 2 total); descriptive reporting only.</span>
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">🩺 Sensitivity analysis: ตามสถานะ HF</span>
+      <span class="lang-en">🩺 Sensitivity analysis by HF status</span>
+    </div>
+    <p style="font-size:13.5px;line-height:1.8;color:#374151;margin-bottom:10px">
+      <span class="lang-th">ตรวจสอบประวัติ HF จากรหัส ICD-10 (I50.x) พบ <strong>prevalent HF 65 ราย (2.7%)</strong> และ <strong>incident HF 70 ราย (2.9%)</strong> เมื่อทดสอบ sensitivity โดยตัด prevalent HF ออก พบการกระจายของกลุ่มความเสี่ยงเปลี่ยนแปลง <strong>ไม่เกิน 0.5%</strong> ในทุกระดับ บ่งชี้ว่าผลการจำแนกความเสี่ยงมีความ <strong>robust</strong> ต่อการรวม prevalent HF</span>
+      <span class="lang-en">HF status was identified from ICD-10 codes (I50.x): <strong>65 prevalent HF (2.7%)</strong> and <strong>70 incident HF (2.9%)</strong>. Sensitivity analysis excluding prevalent HF showed changes of <strong>≤0.5 percentage points</strong> across all five risk groups — risk classification was <strong>robust</strong>.</span>
+    </p>
+    <p style="font-size:12.5px;color:#374151;background:#f8fafc;border-radius:6px;padding:10px 14px;border-left:3px solid var(--navy)">
+      <strong>WATCH-DM score by HF status</strong> (Kruskal–Wallis H = 9.33, p = 0.009):
+      No HF 7.52 ± 2.87 | Incident HF 7.76 ± 3.15 | Prevalent HF 8.51 ± 2.89 ·
+      <span class="lang-th">Mann–Whitney U + Bonferroni: Prevalent vs No HF, p = 0.009</span>
+      <span class="lang-en">Mann–Whitney U + Bonferroni: Prevalent vs. No HF, p = 0.009</span>
+    </p>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 4 — Conclusions & Clinical Implications
+═══════════════════════════════════════════════════════════════ -->
+<div id="t4" class="tab-pane" role="tabpanel">
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">📌 สรุปผลการวิจัยที่สำคัญ</span>
+        <span class="lang-en">📌 Key findings</span>
+      </div>
+      <ul style="padding-left:18px;font-size:13.5px;line-height:2.2;color:#374151">
+        <li>
+          <span class="lang-th">ผู้ป่วย <strong>ร้อยละ 16.3 (388 ราย)</strong> อยู่ในกลุ่มเสี่ยงสูง–สูงมาก</span>
+          <span class="lang-en"><strong>16.3% (388 patients)</strong> fall into the High–Very High risk groups.</span>
+        </li>
+        <li>
+          <span class="lang-th"><strong>อายุ</strong> มีส่วนสนับสนุนคะแนนมากที่สุด (เฉลี่ย 3.29 คะแนน)</span>
+          <span class="lang-en"><strong>Age</strong> is the largest score contributor (mean 3.29 points).</span>
+        </li>
+        <li>
+          <span class="lang-th"><strong>eGFR เฉลี่ย</strong> กลุ่ม Very High เพียง 32.8 mL/min/1.73 m² (CKD stage 3b–4)</span>
+          <span class="lang-en"><strong>Mean eGFR</strong> in the Very High group is 32.8 mL/min/1.73 m² (CKD stage 3b–4).</span>
+        </li>
+        <li>
+          <span class="lang-th">ความชุก Prior MI สูงขึ้นตามระดับความเสี่ยง (0.4% → 10.3%)</span>
+          <span class="lang-en">Prior MI prevalence rises with risk level (0.4% → 10.3%).</span>
+        </li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">🔍 ข้อสังเกตสำคัญทางคลินิก</span>
+        <span class="lang-en">🔍 Clinical observations</span>
+      </div>
+      <ul style="padding-left:18px;font-size:13.5px;line-height:2.2;color:#374151">
+        <li>
+          <span class="lang-th">HDL-C สูญหาย <strong>ร้อยละ 81</strong> → ควรเพิ่มเป็น standard panel</span>
+          <span class="lang-en">HDL-C is missing in <strong>~81%</strong> → consider adding to standard lab panel.</span>
+        </li>
+        <li>
+          <span class="lang-th">eGFR กลุ่มสูงมากเฉลี่ย 32.8 → พิจารณาทบทวนขนาดยา SGLT2i และ Metformin</span>
+          <span class="lang-en">Very-High eGFR averages 32.8 → consider SGLT2i and metformin dose review.</span>
+        </li>
+        <li>
+          <span class="lang-th">QRS กว้างพบ <strong>2 ราย (0.1%)</strong> เนื่องจากใช้ qualitative echo keyword — ควรบูรณาการ ECG database ในอนาคต</span>
+          <span class="lang-en">Only <strong>2 wide-QRS cases (0.1%)</strong> due to qualitative echo-keyword detection — future ECG database integration is recommended.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">🏥 แนวทางการดูแลตามระดับความเสี่ยง (ข้อเสนอแนะเชิงประยุกต์)</span>
+      <span class="lang-en">🏥 Risk-stratified care suggestions (proposed application)</span>
+    </div>
+    <p style="font-size:12px;color:var(--muted);font-style:italic;margin-bottom:10px">
+      <span class="lang-th">แนวทางต่อไปนี้เป็นข้อเสนอแนะเชิงประยุกต์ (suggested implication) จำเป็นต้องได้รับการศึกษาเพิ่มเติมในรูปแบบ pragmatic clinical trial เพื่อยืนยันประโยชน์ทางคลินิก</span>
+      <span class="lang-en">The following are suggested implications and require pragmatic clinical trials to confirm clinical benefit.</span>
+    </p>
+    <div style="overflow-x:auto">
+    <table class="tbl">
+      <tr>
+        <th><span class="lang-th">กลุ่ม</span><span class="lang-en">Group</span></th>
+        <th><span class="lang-th">คะแนน</span><span class="lang-en">Score</span></th>
+        <th>n (%)</th>
+        <th><span class="lang-th">การดูแลโดยเภสัชกร</span><span class="lang-en">Pharmacist role</span></th>
+        <th><span class="lang-th">การติดตาม</span><span class="lang-en">Follow-up</span></th>
+      </tr>
+      <tr>
+        <td><span class="badge badge-vl">Very Low</span></td><td>≤7</td><td>1,214 (51.0%)</td>
+        <td><span class="lang-th">คำแนะนำทั่วไป ปรับพฤติกรรม</span><span class="lang-en">General counseling, lifestyle</span></td>
+        <td><span class="lang-th">ปีละ 1 ครั้ง</span><span class="lang-en">Yearly</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-l">Low</span></td><td>8–9</td><td>574 (24.1%)</td>
+        <td><span class="lang-th">คำแนะนำเข้มข้นขึ้น ตรวจ adherence</span><span class="lang-en">Intensified counseling, adherence check</span></td>
+        <td><span class="lang-th">ทุก 6 เดือน</span><span class="lang-en">Every 6 months</span></td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-avg">Average</span></td><td>10</td><td>206 (8.6%)</td>
+        <td><span class="lang-th">Pharmaceutical care เชิงรุก</span><span class="lang-en">Proactive pharmaceutical care</span></td>
+        <td><span class="lang-th">ทุก 3–6 เดือน</span><span class="lang-en">Every 3–6 months</span></td>
+      </tr>
+      <tr style="background:#fff7ed">
+        <td><span class="badge badge-h">High</span></td><td>11–13</td><td>330 (13.9%)</td>
+        <td><span class="lang-th">⚠️ Proactive care, ส่งต่อแพทย์ประเมิน HF</span><span class="lang-en">⚠️ Proactive care, refer for HF evaluation</span></td>
+        <td><span class="lang-th">ทุก 1–3 เดือน</span><span class="lang-en">Every 1–3 months</span></td>
+      </tr>
+      <tr style="background:#fee2e2">
+        <td><span class="badge badge-vh">Very High</span></td><td>≥14</td><td>58 (2.4%)</td>
+        <td><span class="lang-th">🚨 ส่งต่อแพทย์โรคหัวใจ ติดตามอาการ HF ทุก visit</span><span class="lang-en">🚨 Refer to cardiology; monitor HF symptoms at every visit</span></td>
+        <td><span class="lang-th">ทุก 1 เดือน หรือ PRN</span><span class="lang-en">Monthly or PRN</span></td>
+      </tr>
+    </table>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">⚠️ ข้อจำกัดของการศึกษา</span>
+        <span class="lang-en">⚠️ Study limitations</span>
+      </div>
+      <ul style="padding-left:18px;font-size:13.5px;line-height:2.1;color:#374151">
+        <li>
+          <span class="lang-th"><strong>eGFR proxy:</strong> อาจเกิด multicollinearity ระหว่าง age และ eGFR; performance ที่ Segar รายงาน (AUC = 0.747) อาจไม่อ้างอิงโดยตรงกับเวอร์ชันที่ใช้ eGFR</span>
+          <span class="lang-en"><strong>eGFR proxy:</strong> potential age–eGFR multicollinearity; the published AUC = 0.747 may not directly apply to the eGFR-substituted version.</span>
+        </li>
+        <li>
+          <span class="lang-th">การศึกษาเป็น <strong>cross-sectional</strong> ไม่สามารถยืนยัน HF incidence ในอนาคต</span>
+          <span class="lang-en"><strong>Cross-sectional design</strong> — future HF incidence cannot be confirmed.</span>
+        </li>
+        <li>
+          <span class="lang-th"><strong>Single-center:</strong> ไม่ควร generalize โดยตรงไปยังบริบทอื่น</span>
+          <span class="lang-en"><strong>Single-center</strong> — limited external validity.</span>
+        </li>
+        <li>
+          <span class="lang-th">ผลรวม prevalent HF (65 ราย) ในการวิเคราะห์หลัก — แม้ sensitivity ยืนยันว่า robust แต่ pure incident-HF interpretation ต้องระวัง</span>
+          <span class="lang-en">Prevalent HF (n = 65) included in primary analysis — sensitivity confirms robustness, but pure incident-HF interpretation requires caution.</span>
+        </li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">
+        <span class="lang-th">🔮 ข้อเสนอแนะสำหรับการวิจัยต่อไป</span>
+        <span class="lang-en">🔮 Future directions</span>
+      </div>
+      <ul style="padding-left:18px;font-size:13.5px;line-height:2.1;color:#374151">
+        <li>
+          <span class="lang-th"><strong>External validation</strong> บนประชากรไทยที่บันทึก SCr โดยตรง</span>
+          <span class="lang-en"><strong>External validation</strong> in a Thai population with directly measured SCr.</span>
+        </li>
+        <li>
+          <span class="lang-th">เพิ่ม <strong>HDL-C ใน standard lab panel</strong> ของคลินิกเบาหวาน</span>
+          <span class="lang-en">Add <strong>HDL-C to the standard lab panel</strong> of diabetes clinics.</span>
+        </li>
+        <li>
+          <span class="lang-th">บูรณาการ <strong>ECG database</strong> เพื่อวัด QRS duration อย่างแม่นยำ</span>
+          <span class="lang-en">Integrate <strong>ECG databases</strong> for accurate QRS duration.</span>
+        </li>
+        <li>
+          <span class="lang-th"><strong>Pragmatic clinical trial</strong> เพื่อยืนยันประโยชน์ของ proactive pharmaceutical care</span>
+          <span class="lang-en"><strong>Pragmatic clinical trials</strong> to confirm benefit of proactive pharmaceutical care.</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 5 — Calculator
+═══════════════════════════════════════════════════════════════ -->
+<div id="t5" class="tab-pane" role="tabpanel">
+  <div class="alert alert-blue">ℹ️
+    <span class="lang-th">เครื่องคำนวณนี้ใช้สูตรเดียวกับ Python pipeline v0.1.0 (Zenodo DOI: 10.5281/zenodo.20165070) ผลลัพธ์เป็นค่าประมาณตาม Segar et al. 2019 ยังไม่ผ่าน external validation ในประชากรไทย</span>
+    <span class="lang-en">This calculator uses the same scoring logic as the Python pipeline v0.1.0 (Zenodo DOI: 10.5281/zenodo.20165070). Results are estimated per Segar et al. 2019 and have not been externally validated in Thai populations.</span>
+  </div>
+
+  <div class="grid2" style="align-items:start">
+    <div>
+      <div class="card">
+        <div class="card-title">
+          <span class="lang-th">🧮 กรอกข้อมูลผู้ป่วย</span>
+          <span class="lang-en">🧮 Patient data entry</span>
+        </div>
+        <div class="calc-grid">
+          <div class="form-group">
+            <label><span class="lang-th">อายุ</span><span class="lang-en">Age</span> <span>(<span class="lang-th">ปี</span><span class="lang-en">years</span>)</span></label>
+            <input type="number" id="f_age" min="18" max="120" placeholder="65" oninput="calcScore()">
+          </div>
+          <div class="form-group">
+            <label>BMI <span>(kg/m²)</span></label>
+            <input type="number" id="f_bmi" min="10" max="80" step="0.1" placeholder="26.5" oninput="calcScore()">
+          </div>
+          <div class="form-group">
+            <label>SBP <span>(mmHg)</span></label>
+            <input type="number" id="f_sbp" min="60" max="250" placeholder="135" oninput="calcScore()">
+          </div>
+          <div class="form-group">
+            <label>DBP <span>(mmHg)</span></label>
+            <input type="number" id="f_dbp" min="30" max="150" placeholder="75" oninput="calcScore()">
+          </div>
+          <div class="form-group">
+            <label>FPG <span>(mg/dL)</span></label>
+            <input type="number" id="f_fpg" min="50" max="600" placeholder="136" oninput="calcScore()">
+          </div>
+          <div class="form-group">
+            <label>HDL-C <span>(mg/dL)</span></label>
+            <input type="number" id="f_hdl" min="10" max="150" placeholder="50" oninput="calcScore()">
+          </div>
+          <div class="form-group">
+            <label>eGFR <span>(mL/min/1.73m²) — <span class="lang-th">แทน</span><span class="lang-en">substituting</span> SCr†</span></label>
+            <input type="number" id="f_egfr" min="1" max="200" placeholder="72" oninput="calcScore()">
+          </div>
+          <div class="form-group">
+            <label>QRS width <span>(<span class="lang-th">จาก Echo</span><span class="lang-en">from echo report</span>)‡</span></label>
+            <select id="f_qrs" onchange="calcScore()">
+              <option value="">— <span class="lang-th">เลือก</span><span class="lang-en">select</span> —</option>
+              <option value="0"><span class="lang-th">แคบ / ไม่ระบุ</span><span class="lang-en">Narrow / not noted</span> (0)</option>
+              <option value="3">LBBB / RBBB / PPM (3)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Prior MI</label>
+            <select id="f_mi" onchange="calcScore()">
+              <option value="">— <span class="lang-th">เลือก</span><span class="lang-en">select</span> —</option>
+              <option value="0"><span class="lang-th">ไม่มี</span><span class="lang-en">No</span> (0)</option>
+              <option value="3"><span class="lang-th">มีประวัติ</span><span class="lang-en">Yes</span> (3)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Prior CABG</label>
+            <select id="f_cabg" onchange="calcScore()">
+              <option value="">— <span class="lang-th">เลือก</span><span class="lang-en">select</span> —</option>
+              <option value="0"><span class="lang-th">ไม่มี</span><span class="lang-en">No</span> (0)</option>
+              <option value="2"><span class="lang-th">มีประวัติ</span><span class="lang-en">Yes</span> (2)</option>
+            </select>
+          </div>
+        </div>
+        <button class="calc-btn" onclick="calcScore()">🧮 <span class="lang-th">คำนวณ</span><span class="lang-en">Calculate</span></button>
+        <button class="calc-btn" style="background:#64748b;margin-top:8px" onclick="resetCalc()">🔄 <span class="lang-th">ล้างข้อมูล</span><span class="lang-en">Reset</span></button>
+        <p style="font-size:11px;color:#94a3b8;margin-top:10px">
+          <span class="lang-th">† eGFR แทน SCr · ‡ ใช้ echo report keyword (LBBB/RBBB/PPM) แทน ECG numeric</span>
+          <span class="lang-en">† eGFR substitutes SCr · ‡ echo report keywords substitute ECG numeric</span>
+        </p>
+      </div>
+    </div>
+
+    <div>
+      <div id="scoreResult" class="score-display" style="background:#f1f5f9;border:2px dashed #cbd5e1;color:#94a3b8">
+        <div class="score-big">—<span class="score-max">/32</span></div>
+        <div class="score-risk">
+          <span class="lang-th">กรอกข้อมูลเพื่อคำนวณ</span>
+          <span class="lang-en">Enter data to calculate</span>
+        </div>
+        <div class="score-sub">
+          <span class="lang-th">คะแนน WATCH-DM จะแสดงที่นี่</span>
+          <span class="lang-en">WATCH-DM score appears here</span>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-title">
+          <span class="lang-th">📊 รายละเอียดคะแนน</span>
+          <span class="lang-en">📊 Score breakdown</span>
+        </div>
+        <div id="scoreBreakdown" style="font-size:13px;color:#94a3b8;text-align:center;padding:10px">
+          <span class="lang-th">กรอกข้อมูลเพื่อดูรายละเอียด</span>
+          <span class="lang-en">Enter data to see breakdown</span>
+        </div>
+      </div>
+
+      <div id="recBox" style="display:none" class="card">
+        <div class="card-title">
+          <span class="lang-th">💊 คำแนะนำเชิงคลินิก</span>
+          <span class="lang-en">💊 Clinical recommendation</span>
+        </div>
+        <div id="recContent" class="rec-box"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">📋 เกณฑ์การให้คะแนน WATCH-DM (เวอร์ชันการศึกษานี้)</span>
+      <span class="lang-en">📋 WATCH-DM scoring criteria (this study's version)</span>
+    </div>
+    <div style="overflow-x:auto">
+    <table class="tbl score-tbl">
+      <tr><th><span class="lang-th">ตัวแปร</span><span class="lang-en">Variable</span></th><th><span class="lang-th">เกณฑ์</span><span class="lang-en">Criterion</span></th><th><span class="lang-th">คะแนน</span><span class="lang-en">Points</span></th><th><span class="lang-th">ตัวแปร</span><span class="lang-en">Variable</span></th><th><span class="lang-th">เกณฑ์</span><span class="lang-en">Criterion</span></th><th><span class="lang-th">คะแนน</span><span class="lang-en">Points</span></th></tr>
+      <tr>
+        <td rowspan="7" style="font-weight:700;vertical-align:top;padding-top:12px"><span class="lang-th">อายุ (ปี)</span><span class="lang-en">Age (yr)</span></td>
+        <td>&lt;50</td><td><span class="pts-badge">0</span></td>
+        <td rowspan="4" style="font-weight:700;vertical-align:top;padding-top:12px">FPG (mg/dL)</td>
+        <td>&lt;125</td><td><span class="pts-badge">0</span></td>
+      </tr>
+      <tr><td>50–54</td><td><span class="pts-badge">1</span></td><td>125–199</td><td><span class="pts-badge">1</span></td></tr>
+      <tr><td>55–59</td><td><span class="pts-badge">2</span></td><td>200–299</td><td><span class="pts-badge">2</span></td></tr>
+      <tr><td>60–64</td><td><span class="pts-badge">3</span></td><td>≥300</td><td><span class="pts-badge">3</span></td></tr>
+      <tr><td>65–69</td><td><span class="pts-badge">4</span></td><td rowspan="3" style="font-weight:700;vertical-align:top;padding-top:12px">HDL-C* (mg/dL)</td><td>≥60</td><td><span class="pts-badge">0</span></td></tr>
+      <tr><td>70–74</td><td><span class="pts-badge">5</span></td><td>30–59</td><td><span class="pts-badge">1</span></td></tr>
+      <tr><td>≥75</td><td><span class="pts-badge">6</span></td><td>&lt;30</td><td><span class="pts-badge">2</span></td></tr>
+      <tr>
+        <td rowspan="4" style="font-weight:700;vertical-align:top;padding-top:12px">BMI (kg/m²)</td>
+        <td>&lt;25</td><td><span class="pts-badge">0</span></td>
+        <td rowspan="3" style="font-weight:700;vertical-align:top;padding-top:12px">eGFR† (mL/min)</td><td>&gt;60</td><td><span class="pts-badge">0</span></td>
+      </tr>
+      <tr><td>25–34</td><td><span class="pts-badge">1</span></td><td>30–60</td><td><span class="pts-badge">2</span></td></tr>
+      <tr><td>35–39</td><td><span class="pts-badge">2</span></td><td>&lt;30</td><td><span class="pts-badge">5</span></td></tr>
+      <tr><td>≥40</td><td><span class="pts-badge">3</span></td><td rowspan="2" style="font-weight:700;vertical-align:top;padding-top:12px">QRS‡</td><td><span class="lang-th">แคบ</span><span class="lang-en">Narrow</span></td><td><span class="pts-badge">0</span></td></tr>
+      <tr>
+        <td rowspan="4" style="font-weight:700;vertical-align:top;padding-top:12px">SBP (mmHg)</td>
+        <td>&lt;100</td><td><span class="pts-badge">0</span></td>
+        <td>LBBB / RBBB / PPM</td><td><span class="pts-badge">3</span></td>
+      </tr>
+      <tr><td>100–139</td><td><span class="pts-badge">1</span></td><td>Prior MI</td><td><span class="lang-th">มี</span><span class="lang-en">Yes</span></td><td><span class="pts-badge">3</span></td></tr>
+      <tr><td>140–159</td><td><span class="pts-badge">2</span></td><td>Prior CABG</td><td><span class="lang-th">มี</span><span class="lang-en">Yes</span></td><td><span class="pts-badge">2</span></td></tr>
+      <tr><td>≥160</td><td><span class="pts-badge">3</span></td><td style="font-weight:700"><span class="lang-th">คะแนนรวมสูงสุด</span><span class="lang-en">Max total</span></td><td colspan="2"><span class="pts-badge" style="background:#22c55e">32 pts</span></td></tr>
+      <tr>
+        <td rowspan="3" style="font-weight:700;vertical-align:top;padding-top:12px">DBP* (mmHg)</td>
+        <td>≥80</td><td><span class="pts-badge">0</span></td>
+        <td colspan="3" style="font-size:11.5px;color:#6b7280;font-style:italic" rowspan="3">
+          *<span class="lang-th">Inverse scoring (ยิ่งต่ำ ยิ่งได้คะแนนมาก)</span><span class="lang-en">Inverse scoring (lower = more points)</span> · † <span class="lang-th">แทน</span><span class="lang-en">Substitutes</span> SCr · ‡ <span class="lang-th">จาก echo report keyword</span><span class="lang-en">From echo report keywords</span>
+        </td>
+      </tr>
+      <tr><td>60–79</td><td><span class="pts-badge">1</span></td></tr>
+      <tr><td>&lt;60</td><td><span class="pts-badge">2</span></td></tr>
+    </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">🎯 เกณฑ์การแปลผลและความเสี่ยง 5 ปี</span>
+      <span class="lang-en">🎯 Risk interpretation and 5-year HF risk</span>
+    </div>
+    <table class="tbl">
+      <tr><th><span class="lang-th">กลุ่ม</span><span class="lang-en">Group</span></th><th><span class="lang-th">คะแนน</span><span class="lang-en">Score</span></th><th><span class="lang-th">ความเสี่ยง HF 5 ปี (โดยประมาณ)</span><span class="lang-en">5-yr HF risk (approx.)</span></th></tr>
+      <tr><td><span class="badge badge-vl">Very Low</span></td><td>≤7</td><td>&lt;5%</td></tr>
+      <tr><td><span class="badge badge-l">Low</span></td><td>8–9</td><td>5–10%</td></tr>
+      <tr><td><span class="badge badge-avg">Average</span></td><td>10</td><td>10–15%</td></tr>
+      <tr style="background:#fff7ed"><td><span class="badge badge-h">High</span></td><td>11–13</td><td>15–25%</td></tr>
+      <tr style="background:#fee2e2"><td><span class="badge badge-vh">Very High</span></td><td>≥14</td><td>&gt;25–30%</td></tr>
+    </table>
+    <p style="font-size:11.5px;color:#6b7280;margin-top:8px;font-style:italic">
+      <span class="lang-th">หมายเหตุ: ตัวเลขความเสี่ยงเป็นค่าประมาณจาก Segar et al. (2019) และ Iwakura et al. (2024) ไม่ใช่ calibrated probability สำหรับประชากรไทยโดยตรง</span>
+      <span class="lang-en">Note: risk estimates are approximations from Segar et al. (2019) and Iwakura et al. (2024); not a calibrated probability for the Thai population.</span>
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     TAB 6 — Code, Citation, Team
+═══════════════════════════════════════════════════════════════ -->
+<div id="t6" class="tab-pane" role="tabpanel">
+
+  <div class="grid2">
+    <a class="link-card" href="https://github.com/kkhanitadu/WATCH-DM" target="_blank" rel="noopener">
+      <h4><span style="font-size:22px">📦</span> GitHub Repository <span class="arrow">↗</span></h4>
+      <p>
+        <span class="lang-th">ซอร์สโค้ดเต็มของ analysis pipeline (Python) + visualization notebooks + data dictionary — เผยแพร่ภายใต้สัญญาอนุญาต MIT</span>
+        <span class="lang-en">Full Python analysis pipeline + visualization notebooks + data dictionary — released under the MIT License.</span>
+      </p>
+      <p style="margin-top:6px;color:var(--navy);font-weight:600;font-size:12px">github.com/kkhanitadu/WATCH-DM</p>
+    </a>
+    <a class="link-card" href="https://doi.org/10.5281/zenodo.20165070" target="_blank" rel="noopener">
+      <h4><span style="font-size:22px">🔗</span> Zenodo Archive (v0.1.0) <span class="arrow">↗</span></h4>
+      <p>
+        <span class="lang-th">บันทึกเวอร์ชัน archived พร้อม DOI สำหรับการอ้างอิงวิชาการ — Published May 13, 2026</span>
+        <span class="lang-en">Versioned archive with citable DOI — Published May 13, 2026.</span>
+      </p>
+      <p style="margin-top:6px;color:var(--navy);font-weight:600;font-size:12px">doi.org/10.5281/zenodo.20165070</p>
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">📝 วิธีการอ้างอิง (How to cite)</span>
+      <span class="lang-en">📝 How to cite</span>
+    </div>
+
+    <h4 style="font-size:13px;color:var(--navy);margin-bottom:6px;margin-top:6px">
+      <span class="lang-th">📰 บทความ (Manuscript)</span>
+      <span class="lang-en">📰 Manuscript</span>
+    </h4>
+    <p style="font-size:13px;line-height:1.7;color:#374151;background:#f8fafc;padding:10px 14px;border-radius:6px;border-left:3px solid var(--navy)">
+      <span class="lang-th">ดวงแก้วแกร่ง ขันธ์ และคณะ. การประเมินความเสี่ยงต่อการเกิดภาวะหัวใจล้มเหลวในผู้ป่วยเบาหวานชนิดที่ 2 ด้วยคะแนนความเสี่ยง WATCH-DM ในคลินิกเบาหวานผู้ป่วยนอก โรงพยาบาลนครพิงค์. <em>วารสารเภสัชกรรมไทย</em>; 2026 (under review).</span>
+      <span class="lang-en">Duangchaemkarn K, et al. Assessment of 5-year heart failure risk in type 2 diabetic patients using the WATCH-DM risk score in an ambulatory diabetic clinic, Nakornping Hospital. <em>Thai Journal of Pharmacy Practice</em>; 2026 (under review).</span>
+    </p>
+
+    <h4 style="font-size:13px;color:var(--navy);margin-bottom:6px;margin-top:14px">
+      <span class="lang-th">💾 ซอฟต์แวร์ (Software / Code)</span>
+      <span class="lang-en">💾 Software / Code</span>
+    </h4>
+    <p style="font-size:13px;line-height:1.7;color:#374151;background:#f8fafc;padding:10px 14px;border-radius:6px;border-left:3px solid var(--navy)">
+      Duangchaemkarn K. WATCH-DM: Reproducible Analysis Pipeline for 5-Year Heart Failure Risk Assessment in Type 2 Diabetic Patients at Nakornping Hospital (v0.1.0). Zenodo. 2026. <a href="https://doi.org/10.5281/zenodo.20165070" target="_blank" rel="noopener">https://doi.org/10.5281/zenodo.20165070</a>
+    </p>
+
+    <h4 style="font-size:13px;color:var(--navy);margin-bottom:6px;margin-top:14px">
+      🔖 BibTeX <button class="copy-btn" onclick="copyText('bibtex')">📋 Copy</button>
+    </h4>
+    <div class="code-block" id="bibtex">@software{duangchaemkarn_watchdm_2026,
+  author       = {Duangchaemkarn, Khanita},
+  title        = {{WATCH-DM: Reproducible Analysis Pipeline for
+                   5-Year Heart Failure Risk Assessment in
+                   Type 2 Diabetic Patients at Nakornping Hospital}},
+  month        = may,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {v0.1.0},
+  doi          = {10.5281/zenodo.20165070},
+  url          = {https://doi.org/10.5281/zenodo.20165070}
+}</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">👥 ทีมวิจัย</span>
+      <span class="lang-en">👥 Research team</span>
+    </div>
+    <div class="grid3">
+      <div class="person">
+        <div class="person-name">Khanita Duangchaemkarn, PhD, RPh</div>
+        <div class="person-role">
+          <span class="lang-th">ผู้วิจัยหลัก (Corresponding author)</span>
+          <span class="lang-en">Principal investigator (Corresponding author)</span>
+        </div>
+        <div class="person-affil">
+          <span class="lang-th">คณะเภสัชศาสตร์ มหาวิทยาลัยพะเยา</span>
+          <span class="lang-en">School of Pharmaceutical Sciences, University of Phayao</span><br>
+          ORCID: <a href="https://orcid.org/0000-0001-6864-9066" target="_blank" rel="noopener">0000-0001-6864-9066</a>
+        </div>
+      </div>
+      <div class="person">
+        <div class="person-name">CATERX Research Group</div>
+        <div class="person-role">
+          <span class="lang-th">กลุ่มวิจัย</span>
+          <span class="lang-en">Research group</span>
+        </div>
+        <div class="person-affil">
+          <span class="lang-th">Computational Approach for Therapeutics, Epidemiology, &amp; Rx (CATERX)</span>
+          <span class="lang-en">Computational Approach for Therapeutics, Epidemiology, &amp; Rx (CATERX)</span><br>
+          <a href="https://sites.google.com/up.ac.th/khanita/caterx-research-group" target="_blank" rel="noopener">caterx group ↗</a>
+        </div>
+      </div>
+      <div class="person">
+        <div class="person-name">
+          <span class="lang-th">กลุ่มงานเภสัชกรรม</span>
+          <span class="lang-en">Department of Pharmacy</span>
+        </div>
+        <div class="person-role">
+          <span class="lang-th">หน่วยงานสนับสนุนข้อมูล</span>
+          <span class="lang-en">Data collaborator</span>
+        </div>
+        <div class="person-affil">
+          <span class="lang-th">โรงพยาบาลนครพิงค์ จังหวัดเชียงใหม่</span>
+          <span class="lang-en">Nakornping Hospital, Chiang Mai Province, Thailand</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">
+      <span class="lang-th">📚 References (ที่ใช้ในต้นฉบับ)</span>
+      <span class="lang-en">📚 Manuscript references</span>
+    </div>
+    <ol style="padding-left:22px;font-size:12.5px;line-height:1.9;color:#374151">
+      <li>International Diabetes Federation. Diabetes facts &amp; figures. IDF, 2025.</li>
+      <li>Division of Non Communicable Diseases, Department of Disease Control, Ministry of Public Health, Thailand. NCD report; 2026.</li>
+      <li>Jia G, Hill MA, Sowers JR. Diabetic cardiomyopathy: an update of mechanisms contributing to this clinical entity. <em>Circ Res</em>. 2018;122(4):624–38.</li>
+      <li>Marx N, Federici M, Schütt K, et al. 2023 ESC Guidelines for the management of cardiovascular disease in patients with diabetes. <em>Eur Heart J</em>. 2023;44(39):4043–140.</li>
+      <li>Pop-Busui R, Januzzi JL, Bruemmer D, et al. Heart failure: an underappreciated complication of diabetes. A consensus report of the American Diabetes Association. <em>Diabetes Care</em>. 2022;45(7):1670–90.</li>
+      <li>Diabetes Association of Thailand. Clinical practice guideline for diabetes 2023.</li>
+      <li>Chuantantikamol C, Rawdaree P. Risk factors of hospitalization due to congestive heart failure in type 2 diabetes patients. <em>Vajira Med J</em>. 2021;65(3):197–210.</li>
+      <li>Berg DD, Wiviott SD, Scirica BM, et al. Heart failure risk stratification and efficacy of SGLT2 inhibitors in patients with T2DM. <em>Circulation</em>. 2019;140(19):1569–77.</li>
+      <li>Segar MW, Vaduganathan M, Patel KV, et al. Machine learning to predict the risk of incident heart failure hospitalization among patients with diabetes: the WATCH-DM risk score. <em>Diabetes Care</em>. 2019;42(12):2298–306.</li>
+      <li>Iwakura K, Onishi T, Okamura A, et al. The WATCH-DM risk score estimates clinical outcomes in T2DM patients with HFpEF. <em>Sci Rep</em>. 2024;14(1):1746.</li>
+      <li>Rossing P, Caramori ML, Chan JCN, et al. KDIGO 2022 Clinical Practice Guideline for Diabetes Management in CKD. <em>Kidney Int</em>. 2022;102(5S):S1–127.</li>
+      <li>Levey AS, de Jong PE, Coresh J, et al. The definition, classification, and prognosis of chronic kidney disease: a KDIGO Controversies Conference report. <em>Kidney Int</em>. 2011;80(1):17–28.</li>
+      <li>Stevens PE, Ahmed SB, Carrero JJ, et al. KDIGO 2024 Clinical Practice Guideline for the Evaluation and Management of CKD. <em>Kidney Int</em>. 2024;105(4S):S117–314.</li>
+      <li>Matsushita K, van der Velde M, Astor BC, et al. Association of estimated glomerular filtration rate and albuminuria with all-cause and cardiovascular mortality. <em>Lancet</em>. 2010;375(9731):2073–81.</li>
+      <li>Inker LA, Eneanya ND, Coresh J, et al. New creatinine- and cystatin C–based equations to estimate GFR without race. <em>N Engl J Med</em>. 2021;385(19):1737–49.</li>
+    </ol>
+  </div>
+
+</div>
+
+<footer>
+  WATCH-DM Risk Score · Nakornping Hospital × University of Phayao (CATERX) · IRB NKP No.057/68<br>
+  <a href="https://github.com/kkhanitadu/WATCH-DM" target="_blank" rel="noopener">GitHub</a> ·
+  <a href="https://doi.org/10.5281/zenodo.20165070" target="_blank" rel="noopener">Zenodo DOI</a> ·
+  <a href="https://sites.google.com/up.ac.th/khanita/bio" target="_blank" rel="noopener">Author profile</a><br>
+  <span style="opacity:.65">© 2026 Khanita Duangchaemkarn · MIT License · v4 (synced with manuscript revision 30-May-FINAL)</span>
+</footer>
+
+<script>
+// ── Tab switching ────────────────────────────────────────────────
+function showTab(id, evt) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  (evt ? evt.target.closest('.tab-btn') : document.querySelector('.tab-btn')).classList.add('active');
+  if (id === 't3') initCharts();
+}
+
+// ── Language toggle (persists across visits) ────────────────────
+function toggleLang() {
+  const isEN = document.body.classList.toggle('en');
+  document.documentElement.lang = isEN ? 'en' : 'th';
+  document.getElementById('langState').textContent = isEN ? 'EN' : 'TH';
+  try { localStorage.setItem('watchdm_lang', isEN ? 'en' : 'th'); } catch(e) {}
+}
+(function initLang(){
+  try {
+    const saved = localStorage.getItem('watchdm_lang');
+    if (saved === 'en') {
+      document.body.classList.add('en');
+      document.documentElement.lang = 'en';
+      document.getElementById('langState').textContent = 'EN';
+    }
+  } catch(e) {}
+})();
+
+// ── Copy-to-clipboard (citation BibTeX) ─────────────────────────
+function copyText(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const text = el.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 1600);
+  });
+}
+
+// ── Chart data (matches Python pipeline v0.1.0 output) ──────────
+const RISK_DIST = [
+  {group:'Very Low', n:1214, pct:51.0, color:'#22c55e'},
+  {group:'Low',      n:574,  pct:24.1, color:'#86efac'},
+  {group:'Average',  n:206,  pct:8.6,  color:'#fbbf24'},
+  {group:'High',     n:330,  pct:13.9, color:'#f97316'},
+  {group:'Very High',n:58,   pct:2.4,  color:'#ef4444'},
+];
+const GROUPS = ['Very Low\n(≤7)','Low\n(8–9)','Average\n(10)','High\n(11–13)','Very High\n(≥14)'];
+const COLORS = ['#22c55e','#86efac','#fbbf24','#f97316','#ef4444'];
+const BY_GROUP = [
+  {age:59.1,egfr:84.9,fpg:136.0,sbp:131.9,mi:0.4},
+  {age:67.2,egfr:69.2,fpg:136.1,sbp:137.8,mi:3.1},
+  {age:69.7,egfr:59.2,fpg:136.6,sbp:137.1,mi:6.3},
+  {age:73.2,egfr:49.0,fpg:148.2,sbp:142.2,mi:6.1},
+  {age:77.4,egfr:32.8,fpg:140.5,sbp:148.1,mi:10.3},
+];
+const HIST = [
+  {s:0,n:6},{s:1,n:20},{s:2,n:83},{s:3,n:148},{s:4,n:207},{s:5,n:249},
+  {s:6,n:240},{s:7,n:261},{s:8,n:222},{s:9,n:352},{s:10,n:206},{s:11,n:167},
+  {s:12,n:116},{s:13,n:47},{s:14,n:33},{s:15,n:13},{s:16,n:7},{s:17,n:4},{s:18,n:2}
+];
+const COMP = [
+  {l:'Age',m:3.29},{l:'SBP',m:1.44},{l:'eGFR',m:0.86},
+  {l:'HDL-C',m:0.81},{l:'DBP',m:0.73},{l:'BMI',m:0.67},
+  {l:'FPG',m:0.64},{l:'Prior MI',m:0.08},{l:'Wide QRS',m:0.01},{l:'CABG',m:0.00}
+];
+
+let chartsInit = false;
+function initCharts() {
+  if (chartsInit) return;
+  chartsInit = true;
+
+  new Chart(document.getElementById('cDonut'), {
+    type:'doughnut',
+    data:{labels:RISK_DIST.map(d=>`${d.group} (${d.pct}%)`),
+      datasets:[{data:RISK_DIST.map(d=>d.n),backgroundColor:COLORS,borderColor:'#fff',borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'58%',
+      plugins:{legend:{position:'right',labels:{usePointStyle:true,padding:10,font:{size:11}}},
+        tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed.toLocaleString()} patients`}}}}
+  });
+
+  const histCol = HIST.map(d => d.s<=7?'#22c55e':d.s<=9?'#86efac':d.s===10?'#fbbf24':d.s<=13?'#f97316':'#ef4444');
+  new Chart(document.getElementById('cHist'), {
+    type:'bar',
+    data:{labels:HIST.map(d=>d.s),
+      datasets:[{data:HIST.map(d=>d.n),backgroundColor:histCol,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{title:{display:true,text:'WATCH-DM score'},grid:{display:false}},
+        y:{title:{display:true,text:'Number of patients'},beginAtZero:true}}}
+  });
+
+  new Chart(document.getElementById('cAgeEgfr'), {
+    type:'bar',
+    data:{labels:GROUPS,
+      datasets:[
+        {label:'Mean age (yr)',data:BY_GROUP.map(d=>d.age),backgroundColor:'#3b82f680',borderColor:'#3b82f6',borderWidth:2,borderRadius:4,yAxisID:'y'},
+        {label:'Mean eGFR',data:BY_GROUP.map(d=>d.egfr),backgroundColor:'#0891b280',borderColor:'#0891b2',borderWidth:2,borderRadius:4,yAxisID:'y1'}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10},usePointStyle:true}}},
+      scales:{
+        y:{type:'linear',position:'left',title:{display:true,text:'Age (yr)'},min:40},
+        y1:{type:'linear',position:'right',title:{display:true,text:'eGFR'},min:0,max:120,grid:{display:false}}
+      }}
+  });
+
+  new Chart(document.getElementById('cFpgSbp'), {
+    type:'bar',
+    data:{labels:GROUPS,
+      datasets:[
+        {label:'FPG (mg/dL)',data:BY_GROUP.map(d=>d.fpg),backgroundColor:'#f4433680',borderColor:'#f44336',borderWidth:2,borderRadius:4,yAxisID:'y'},
+        {label:'SBP (mmHg)',data:BY_GROUP.map(d=>d.sbp),backgroundColor:'#9c27b080',borderColor:'#9c27b0',borderWidth:2,borderRadius:4,yAxisID:'y1'}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10},usePointStyle:true}}},
+      scales:{
+        y:{type:'linear',position:'left',title:{display:true,text:'FPG (mg/dL)'},min:100},
+        y1:{type:'linear',position:'right',title:{display:true,text:'SBP (mmHg)'},min:110,max:170,grid:{display:false}}
+      }}
+  });
+
+  const sortedC = [...COMP].sort((a,b)=>b.m-a.m);
+  const pal=['#3b82f6','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899','#6366f1','#84cc16','#f97316'];
+  new Chart(document.getElementById('cComp'), {
+    type:'bar',
+    data:{labels:sortedC.map(d=>d.l),
+      datasets:[{data:sortedC.map(d=>d.m),backgroundColor:pal.map(c=>c+'cc'),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.x.toFixed(2)} mean pts`}}},
+      scales:{x:{title:{display:true,text:'Mean contribution to total score'}},y:{grid:{display:false}}}}
+  });
+
+  new Chart(document.getElementById('cMI'), {
+    type:'bar',
+    data:{labels:GROUPS,
+      datasets:[{data:BY_GROUP.map(d=>d.mi),backgroundColor:COLORS.map(c=>c+'cc'),borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`${c.parsed.y}%`}}},
+      scales:{y:{beginAtZero:true,max:15,title:{display:true,text:'Prevalence (%)'}},x:{grid:{display:false}}}}
+  });
+}
+
+// ── WATCH-DM scoring (matches Python pipeline v0.1.0) ───────────
+function scoreAge(v){return v<50?0:v<55?1:v<60?2:v<65?3:v<70?4:v<75?5:6}
+function scoreBmi(v){return v<25?0:v<35?1:v<40?2:3}
+function scoreSbp(v){return v<100?0:v<140?1:v<160?2:3}
+function scoreDbp(v){return v>=80?0:v>=60?1:2}
+function scoreFpg(v){return v<125?0:v<200?1:v<300?2:3}
+function scoreHdl(v){return v>=60?0:v>=30?1:2}
+function scoreEgfr(v){return v>60?0:v>=30?2:5}
+
+const REC = {
+  vl:{col:'#22c55e',txt:'#14532d',bg:'#f0fdf4',
+    risk_th:'ต่ำมาก (Very Low)',risk_en:'Very Low',
+    hf:'< 5%',
+    act_th:'ดูแลผู้ป่วยตามแนวทางมาตรฐาน ให้คำแนะนำเรื่องการปรับเปลี่ยนพฤติกรรม ติดตาม HbA1c และ BP ทุก 6–12 เดือน',
+    act_en:'Standard care; lifestyle counseling; HbA1c and BP every 6–12 months.'},
+  l:{col:'#86efac',txt:'#166534',bg:'#f0fdf4',
+    risk_th:'ต่ำ (Low)',risk_en:'Low',
+    hf:'5–10%',
+    act_th:'เพิ่มความเข้มข้นในการให้คำแนะนำ ประเมิน medication adherence ควบคุม BP &lt;130/80 mmHg และ FPG &lt;130 mg/dL ติดตามทุก 6 เดือน',
+    act_en:'Intensified counseling, adherence check, BP <130/80 and FPG <130; follow-up every 6 months.'},
+  avg:{col:'#fbbf24',txt:'#78350f',bg:'#fffbeb',
+    risk_th:'ปานกลาง (Average)',risk_en:'Average',
+    hf:'10–15%',
+    act_th:'Pharmaceutical care เชิงรุก ประเมิน adherence และ polypharmacy พิจารณาเริ่ม SGLT2i หรือ GLP-1RA ติดตามทุก 3–6 เดือน',
+    act_en:'Proactive pharmaceutical care; adherence and polypharmacy review; consider SGLT2i or GLP-1RA; follow-up every 3–6 months.'},
+  h:{col:'#f97316',txt:'#7c2d12',bg:'#fff7ed',
+    risk_th:'สูง (High)',risk_en:'High',
+    hf:'15–25%',
+    act_th:'⚠️ Proactive care — ส่งต่อแพทย์เพื่อประเมิน HF | พิจารณา SGLT2i ถ้า eGFR ≥45 | ทบทวน diuretics และ ACEI/ARB | จำกัด Na &lt;2 g/day | ตรวจ BNP/NT-proBNP | ติดตามทุก 1–3 เดือน',
+    act_en:'⚠️ Proactive care — refer for HF evaluation; SGLT2i if eGFR ≥45; review diuretics and ACEI/ARB; Na <2 g/day; check BNP/NT-proBNP; follow-up every 1–3 months.'},
+  vh:{col:'#ef4444',txt:'#7f1d1d',bg:'#fef2f2',
+    risk_th:'สูงมาก (Very High)',risk_en:'Very High',
+    hf:'> 25–30%',
+    act_th:'🚨 ส่งต่อแพทย์โรคหัวใจโดยเร่งด่วน | ตรวจ Echocardiogram และ BNP | ประเมิน structural heart disease | ทบทวนยาทุกชนิด (SGLT2i ตาม eGFR, loop diuretics) | ติดตามทุก 1 เดือน',
+    act_en:'🚨 Urgent cardiology referral; echocardiogram and BNP; assess structural heart disease; review all medications (SGLT2i per eGFR, loop diuretics); follow-up monthly.'}
+};
+
+function calcScore() {
+  const age  = parseFloat(document.getElementById('f_age').value);
+  const bmi  = parseFloat(document.getElementById('f_bmi').value);
+  const sbp  = parseFloat(document.getElementById('f_sbp').value);
+  const dbp  = parseFloat(document.getElementById('f_dbp').value);
+  const fpg  = parseFloat(document.getElementById('f_fpg').value);
+  const hdl  = parseFloat(document.getElementById('f_hdl').value);
+  const egfr = parseFloat(document.getElementById('f_egfr').value);
+  const qrs  = document.getElementById('f_qrs').value;
+  const mi   = document.getElementById('f_mi').value;
+  const cabg = document.getElementById('f_cabg').value;
+
+  const fields = [age,bmi,sbp,dbp,fpg,hdl,egfr];
+  const selects = [qrs,mi,cabg];
+  if (fields.some(isNaN) || selects.some(v=>v==='')) return;
+
+  const s = {
+    age: scoreAge(age),  bmi: scoreBmi(bmi), sbp: scoreSbp(sbp),
+    dbp: scoreDbp(dbp),  fpg: scoreFpg(fpg), hdl: scoreHdl(hdl),
+    egfr:scoreEgfr(egfr),qrs: parseInt(qrs)||0,
+    mi:  parseInt(mi)||0, cabg:parseInt(cabg)||0
+  };
+  const total = Object.values(s).reduce((a,b)=>a+b,0);
+  const rk = total<=7?'vl':total<=9?'l':total===10?'avg':total<=13?'h':'vh';
+  const r = REC[rk];
+  const isEN = document.body.classList.contains('en');
+
+  const rd = document.getElementById('scoreResult');
+  rd.style.background = `linear-gradient(135deg,${r.col},${r.col}99)`;
+  rd.style.border = 'none';
+  rd.style.color = r.txt;
+  const riskLabel = isEN ? r.risk_en : r.risk_th;
+  const hfLabel = isEN ? `5-year HF risk: <strong>${r.hf}</strong>` : `ความเสี่ยง HF ใน 5 ปี: <strong>${r.hf}</strong>`;
+  rd.innerHTML = `
+    <div class="score-big">${total}<span class="score-max">/32</span></div>
+    <div class="score-risk">${riskLabel}</div>
+    <div class="score-sub">${hfLabel}</div>`;
+
+  const labels = ['Age','BMI','SBP','DBP*','FPG','HDL*','eGFR†','QRS‡','MI','CABG'];
+  const vals = [s.age,s.bmi,s.sbp,s.dbp,s.fpg,s.hdl,s.egfr,s.qrs,s.mi,s.cabg];
+  let bd = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:4px">';
+  labels.forEach((l,i)=>{
+    bd += `<div style="background:#f8fafc;border-radius:8px;padding:8px 4px;text-align:center;border-top:3px solid ${vals[i]>0?r.col:'#e2e8f0'}">
+      <div style="font-size:10px;color:#6b7280;line-height:1.3">${l}</div>
+      <div style="font-size:20px;font-weight:800;color:${vals[i]>0?r.col:'#9ca3af'}">${vals[i]}</div>
+    </div>`;
+  });
+  bd += '</div>';
+  document.getElementById('scoreBreakdown').innerHTML = bd;
+
+  document.getElementById('recBox').style.display = 'block';
+  const recC = document.getElementById('recContent');
+  recC.style.background = r.bg;
+  recC.style.color = r.txt;
+  recC.style.borderLeft = `4px solid ${r.col}`;
+  const actLabel = isEN ? r.act_en : r.act_th;
+  const heading = isEN ? `<strong>Recommendation (${r.risk_en}):</strong>` : `<strong>แนวทางการดูแล (กลุ่ม${r.risk_th}):</strong>`;
+  recC.innerHTML = `${heading}<br>${actLabel}`;
+}
+
+function resetCalc() {
+  ['f_age','f_bmi','f_sbp','f_dbp','f_fpg','f_hdl','f_egfr','f_qrs','f_mi','f_cabg']
+    .forEach(id => document.getElementById(id).value = '');
+  const rd = document.getElementById('scoreResult');
+  rd.style.background = '#f1f5f9';
+  rd.style.border = '2px dashed #cbd5e1';
+  rd.style.color = '#94a3b8';
+  const isEN = document.body.classList.contains('en');
+  rd.innerHTML = `<div class="score-big">—<span class="score-max">/32</span></div>
+    <div class="score-risk">${isEN ? 'Enter data to calculate' : 'กรอกข้อมูลเพื่อคำนวณ'}</div>
+    <div class="score-sub">${isEN ? 'WATCH-DM score appears here' : 'คะแนน WATCH-DM จะแสดงที่นี่'}</div>`;
+  document.getElementById('scoreBreakdown').innerHTML = `<div style="font-size:13px;color:#94a3b8;text-align:center;padding:10px">${isEN ? 'Enter data to see breakdown' : 'กรอกข้อมูลเพื่อดูรายละเอียด'}</div>`;
+  document.getElementById('recBox').style.display = 'none';
+}
+</script>
+
+</body>
+</html>
